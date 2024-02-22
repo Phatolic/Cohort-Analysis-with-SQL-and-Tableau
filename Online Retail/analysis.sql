@@ -63,3 +63,40 @@ WITH t1 AS(
 	SELECT one.*, FIRST_VALUE(Customers) OVER (PARTITION BY cohort_month ORDER BY cohort_index) AS cohort_size, CAST(Customers AS float) / FIRST_VALUE(Customers) OVER (PARTITION BY cohort_month ORDER BY cohort_index) AS pct_retained
 	FROM one
 	ORDER BY cohort_month
+
+--PIVOT
+WITH cte AS (
+	SELECT DATEPART(year,InvoiceDate) AS year,DATEPART(quarter,InvoiceDate) AS quarter,(UnitPrice * Quantity) AS sales
+	FROM #online_retail_main
+), cte2 AS (
+	SELECT year,quarter,sum(sales) AS tong_doanh_thu
+	FROM CTE
+	GROUP BY year ,quarter
+)
+	SELECT *
+	FROM cte2
+		pivot (
+			SUM(tong_doanh_thu) FOR quarter IN ([1], [2], [3], [4])
+		) AS X
+
+	
+-- UNPIVOT
+WITH cte AS (
+	SELECT DATEPART(year,InvoiceDate) AS year,DATEPART(quarter,InvoiceDate) AS quarter,(UnitPrice * Quantity) AS sales
+	FROM #online_retail_main
+), cte2 AS (
+	SELECT year,quarter,sum(sales) AS tong_doanh_thu
+	FROM CTE
+	GROUP BY year ,quarter
+), cte3 AS (	
+	SELECT *
+	FROM cte2
+		pivot (
+			SUM(tong_doanh_thu) FOR quarter IN ([1],[2],[3],[4])
+		) AS X
+)
+	SELECT year, quarter, sales
+	FROM cte3
+	UNPIVOT (
+		sales FOR quarter IN ([1], [2], [3], [4])
+	) AS Y
